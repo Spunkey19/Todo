@@ -1,12 +1,11 @@
 import tkinter as tk
 from tkinter import messagebox
-from PIL import Image, ImageTk
 import os
 from datetime import datetime
 
 # Files to store tasks
-TASKS_FILE = "tasks.txt"
-COMPLETED_FILE = "completed_tasks.txt"
+TASKS_FILE = os.path.join(os.getcwd(), "tasks.txt")
+COMPLETED_FILE = os.path.join(os.getcwd(), "completed_tasks.txt")
 
 # Initialize the main window
 window = tk.Tk()
@@ -16,18 +15,6 @@ window.resizable(False, False)
 
 tasks = []  # List to store task text and completion status
 task_vars = []  # List to store IntVars for Checkbuttons
-
-# Load the background image
-try:
-    bg_image = Image.open("messi.jpg")  # Replace with your image file name
-    bg_image = bg_image.resize((500, 600), Image.LANCZOS)  # Resize the image to fit the window
-    bg_photo = ImageTk.PhotoImage(bg_image)
-
-    # Create a label to hold the background image
-    bg_label = tk.Label(window, image=bg_photo)
-    bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-except Exception as e:
-    print(f"Error loading image: {e}")
 
 def update_listbox():
     """Update the listbox with current tasks."""
@@ -41,7 +28,13 @@ def update_listbox():
         else:
             task_vars[i].set(completed)  # Update existing IntVar with task completion status
         
-        checkbutton = tk.Checkbutton(frame, text=task, variable=task_vars[i], onvalue=1, offvalue=0, bg='white')
+        # Apply strikethrough and color based on task completion status
+        if completed:
+            checkbutton = tk.Checkbutton(frame, text=task, variable=task_vars[i], onvalue=1, offvalue=0,
+                                         fg='gray', selectcolor='light gray', font=('Arial', 12, 'overstrike'))
+        else:
+            checkbutton = tk.Checkbutton(frame, text=task, variable=task_vars[i], onvalue=1, offvalue=0,
+                                         fg='black', selectcolor='white', font=('Arial', 12))
         checkbutton.pack(anchor='w')
 
 def add_task():
@@ -98,7 +91,25 @@ def save_tasks():
 
 # Create frame to contain checkbuttons for tasks
 frame = tk.Frame(window, bg='white')
-frame.pack(pady=10)
+frame.pack(pady=10, fill=tk.BOTH, expand=True)
+
+# Add scrollbar to the frame for long task lists
+canvas = tk.Canvas(frame)
+scrollbar = tk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+scrollable_frame = tk.Frame(canvas)
+
+scrollable_frame.bind(
+    "<Configure>",
+    lambda e: canvas.configure(
+        scrollregion=canvas.bbox("all")
+    )
+)
+
+canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+canvas.configure(yscrollcommand=scrollbar.set)
+
+canvas.pack(side="left", fill="both", expand=True)
+scrollbar.pack(side="right", fill="y")
 
 # Load existing tasks from the file and update the listbox
 load_tasks()
